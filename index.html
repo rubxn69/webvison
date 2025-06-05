@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Live Stream - Before and After</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+
+    h1 {
+      margin: 20px 10px 10px;
+      font-size: 24px;
+    }
+
+    .video-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      padding: 10px;
+    }
+
+    video, img {
+      border: 2px solid #444;
+      width: 100%;
+      max-width: 480px;
+      height: auto;
+      border-radius: 8px;
+    }
+
+    .video-box {
+      flex: 1 1 300px;
+      max-width: 100%;
+    }
+
+    h2 {
+      margin: 10px 0;
+      font-size: 18px;
+    }
+
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 20px;
+      }
+
+      h2 {
+        font-size: 16px;
+      }
+
+      .video-container {
+        flex-direction: column;
+        gap: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Live Webcam Stream: Before and After</h1>
+  <div class="video-container">
+    <div class="video-box">
+      <h2>Original</h2>
+      <video id="video" autoplay muted playsinline></video>
+    </div>
+    <div class="video-box">
+      <h2>Processed</h2>
+      <img id="processed" src="" alt="Processed Frame">
+    </div>
+  </div>
+
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script>
+    const socket = io("https://99d4-2409-40f0-169-1551-c06b-1ef-3dcb-a5bb.ngrok-free.app", {
+  transports: ["websocket"]
+});
+
+
+    const video = document.getElementById("video");
+    const processedImage = document.getElementById("processed");
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+
+    navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+      video.srcObject = stream;
+
+      setInterval(() => {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob((blob) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const base64 = reader.result.split(",")[1];
+            socket.emit("frame", { image: base64 });
+          };
+          reader.readAsDataURL(blob);
+        }, "image/jpeg");
+      }, 100);
+    });
+
+    socket.on("processed_frame", (data) => {
+      processedImage.src = `data:image/jpeg;base64,${data.image}`;
+    });
+  </script>
+</body>
+</html>
+
