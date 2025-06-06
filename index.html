@@ -29,13 +29,13 @@
     video, img {
       border: 2px solid #444;
       width: 100%;
-      max-width: 480px;
+      max-width: 320px;
       height: auto;
       border-radius: 8px;
     }
 
     .video-box {
-      flex: 1 1 300px;
+      flex: 1 1 200px;
       max-width: 100%;
     }
 
@@ -75,22 +75,26 @@
 
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script>
-    const socket = io("https://99d4-2409-40f0-169-1551-c06b-1ef-3dcb-a5bb.ngrok-free.app", {
-  transports: ["websocket"]
-});
-
+    const socket = io("https://3290-2405-201-c007-e80a-f1f0-44ae-7d1e-b51e.ngrok-free.app", {
+      transports: ["websocket"]
+    });
 
     const video = document.getElementById("video");
     const processedImage = document.getElementById("processed");
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("2d");
 
-    navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+    navigator.mediaDevices.getUserMedia({
+      video: {
+        width: { ideal: 320 },
+        height: { ideal: 180 }
+      }
+    }).then((stream) => {
       video.srcObject = stream;
 
       setInterval(() => {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        canvas.width = 320;
+        canvas.height = 180;
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
         canvas.toBlob((blob) => {
@@ -100,8 +104,10 @@
             socket.emit("frame", { image: base64 });
           };
           reader.readAsDataURL(blob);
-        }, "image/jpeg");
-      }, 100);
+        }, "image/jpeg", 0.6); // Optional compression quality
+      }, 100); // Send every 100ms = 10fps
+    }).catch((err) => {
+      console.error("Camera error:", err);
     });
 
     socket.on("processed_frame", (data) => {
@@ -110,4 +116,3 @@
   </script>
 </body>
 </html>
-
